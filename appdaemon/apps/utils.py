@@ -97,10 +97,6 @@ class BasicApp(BaseOp):
             # retval = self.info_timer(handler)
             super().cancel_timer(handler)
 
-    @property
-    def device_name(self):
-        return None
-
     def google_say(self, msg, temporary=False):
         self._msg = msg
         self.fire_event(E_API_GOOGLE, todo=msg, temporary=temporary)
@@ -180,7 +176,12 @@ class BasicApp(BaseOp):
         Returns:
             float: [description]
         """
-        return float(self.get_state(entity_id))
+        retval: float = 0
+        try:
+            retval = float(self.get_state(entity_id))
+        except:
+            retval = 0
+        return retval
 
     def get_state_seconds(self, entity_id: str) -> int:
         """Vraci z prepoctu minuty na sekundy
@@ -242,9 +243,6 @@ class BasicApp(BaseOp):
             o_attr[a] = attr[a]
         self.set_state(entity, state=state, attributes=o_attr)
 
-    def get_timestamp(self):
-        return time.time()
-
     def listen_toggle(self, switch, button):
         self._toggle_def[button] = switch
         self.my_log("Switch {}".format(switch))
@@ -263,9 +261,6 @@ class BasicApp(BaseOp):
         self._async_run_update = True
         self.call_service("homeassistant/update_entity", entity_id=entity_id)
         self._async_run_update = False
-
-    def m_binary_tlacitko(self, proc, entity_id, **kwargs):
-        self.listen_state(proc, entity_id, new=ON)
 
     def _catch_tlacitko_on(self, entity, attribute, old, new, kwargs):
         self.my_log(f"Chyceno {entity}, {old}, {new}")
@@ -405,7 +400,7 @@ class BasicApp(BaseOp):
             retVal = False
         return retVal
 
-    def set_input_number(self, entity, value):
+    def set_input_number(self, entity: str, value: float):
         retVal = True
         try:
             self.call_service(

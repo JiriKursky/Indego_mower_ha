@@ -5,10 +5,6 @@ from helper_tools import DateTimeOp
 import datetime  # nutne
 
 
-def UpdateEntity(parent: BaseOp, entity: str):
-    parent.call_service("homeassistant/update_entity", entity_id=entity)
-
-
 class SensorOp(UObject):
     def __init__(self, parent: BaseOp, entity: str, friendly_name: str = ""):
         """Zakladni object

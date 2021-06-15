@@ -1,6 +1,6 @@
 from utils import BasicApp
 from globals import ON, OFF, ANO, NE
-import location_zahrada as lza
+import indego_const as igc
 from sensor_op import AppBinarySensor
 from helper_tools import MyHelp as h
 import xml.etree.ElementTree as ET
@@ -21,7 +21,7 @@ SLOVNIK = {
     "Paused": "Pauza",
 }
 
-GROUP_CALCULATE = [lza.MAP_0_X, lza.MAP_0_Y, lza.MAP_1_X, lza.MAP_1_Y]
+GROUP_CALCULATE = [igc.MAP_0_X, igc.MAP_0_Y, igc.MAP_1_X, igc.MAP_1_Y]
 
 
 class Bozena(BasicApp):
@@ -32,18 +32,18 @@ class Bozena(BasicApp):
         self._const_x: float = 0.0
         self._const_y: float = 0.0
 
-        self.listen_state(self._cti_stav, lza.BOZENA_MOWER_POSITION)
-        self.listen_state(self._cti_stav, lza.BOZENA_STATE_DETAIL)
+        self.listen_state(self._cti_stav, igc.BOZENA_MOWER_POSITION)
+        self.listen_state(self._cti_stav, igc.BOZENA_STATE_DETAIL)
         for g in GROUP_CALCULATE:
             self.listen_state(self._calculate_init, g)
         # Definice prikazu, plus stavy, ktere rusi zapnute prikazy
         self._prikazy = {
-            lza.BOZENO_SEKAT: [
+            igc.BOZENO_SEKAT: [
                 self._sekat,
                 ("Mowing", "Border cut", "Mowing - Relocalising"),
             ],
-            lza.BOZENO_DOMU: [self._domu, ("Sleeping", "Mowing - Paused")],
-            lza.BOZENO_PAUZA: [self._pauza, ("Docking", "Mowing - Paused")],
+            igc.BOZENO_DOMU: [self._domu, ("Sleeping", "Mowing - Paused")],
+            igc.BOZENO_PAUZA: [self._pauza, ("Docking", "Mowing - Paused")],
         }
 
         for entity, ar in self._prikazy.items():
@@ -52,7 +52,7 @@ class Bozena(BasicApp):
         # Musi byt zadefinovano pred _cti_stav
         self._sensor_bozena_doma = AppBinarySensor(
             self,
-            lza.BOZENA_DOMA,
+            igc.BOZENA_DOMA,
             "Božena doma",
             OFF,
             "mdi:robot-mower",
@@ -62,7 +62,7 @@ class Bozena(BasicApp):
         self.run_in(self._calculate_init, 2)
         # Stav, ktery se zobrazuje - zadefinovany jako sensor
 
-        self.tlacitko(self._update_bozena, lza.IB_BOZENA_UPDATE)
+        self.tlacitko(self._update_bozena, igc.IB_BOZENA_UPDATE)
         self.simple_loop(30)
 
     def _loop(self, *kwargs):
@@ -77,28 +77,28 @@ class Bozena(BasicApp):
 
     @property
     def _state_detail(self):
-        return self.get_state(lza.BOZENA_STATE_DETAIL)
+        return self.get_state(igc.BOZENA_STATE_DETAIL)
 
     @property
     def _position(self):
-        return self.get_state(lza.BOZENA_MOWER_POSITION)
+        return self.get_state(igc.BOZENA_MOWER_POSITION)
 
     @property
     def _state(self):
-        return self.get_state(lza.BOZENA_STATE)
+        return self.get_state(igc.BOZENA_STATE)
 
     def _get_xy(self):
         try:
             retval = float(
-                self.get_attr_state(lza.BOZENA_MOWER_POSITION, "svg_x_pos")
-            ), float(self.get_attr_state(lza.BOZENA_MOWER_POSITION, "svg_y_pos"))
+                self.get_attr_state(igc.BOZENA_MOWER_POSITION, "svg_x_pos")
+            ), float(self.get_attr_state(igc.BOZENA_MOWER_POSITION, "svg_y_pos"))
         except:
             retval = (0, 0)
         return retval
 
     @property
     def _je_doma(self):
-        return self.get_state_str(lza.BOZENA_STATE) == "Docked"
+        return self.get_state_str(igc.BOZENA_STATE) == "Docked"
 
     def _cti_stav(self, *kwargs):
         self.my_log("Cte stav")
@@ -107,32 +107,32 @@ class Bozena(BasicApp):
         nx = int(x * self._const_x)
         ny = int(y * self._const_y)
         self.my_log(f"Bozena x: {x} {nx} y: {y} {ny}")
-        self.set_state(lza.MOWER_X, state=nx)
-        self.set_state(lza.MOWER_Y, state=ny)
+        self.set_state(igc.MOWER_X, state=nx)
+        self.set_state(igc.MOWER_Y, state=ny)
         for entity, ar in self._prikazy.items():
             if self.is_entity_on(entity) and s in ar[1]:
                 self.turn_off(entity)
 
         if s in SLOVNIK.keys():
             self.my_log(f"Je ve slovniku {s}")
-            self.set_sensor_state(lza.BOZENA_STATE_CZ, SLOVNIK[s])
+            self.set_sensor_state(igc.BOZENA_STATE_CZ, SLOVNIK[s])
         else:
             self.my_log(f"Neni ve slovniku {s}")
-            self.set_state(lza.BOZENA_STATE_CZ, state=s)
+            self.set_state(igc.BOZENA_STATE_CZ, state=s)
 
         state = OFF
         if s in ("Docked", "Charging") or self._je_doma:
             state = ON
-            self.turn_off(lza.BOZENO_DOMU)
+            self.turn_off(igc.BOZENO_DOMU)
         self.my_log(f"Nastaveni doma: {state}")
         self._sensor_bozena_doma.state = state
         # Kontrola, je-li splnen pozadavek zakaz sekani
         if (
             not self._je_doma
-            and self.is_entity_on(lza.BOZENA_ZAKAZ_SEKANI)
-            and self.is_entity_off(lza.BOZENO_DOMU)
+            and self.is_entity_on(igc.BOZENA_ZAKAZ_SEKANI)
+            and self.is_entity_off(igc.BOZENO_DOMU)
         ):
-            self.turn_on(lza.BOZENO_DOMU)
+            self.turn_on(igc.BOZENO_DOMU)
 
     def _prikaz(self, entity_id: str):
         self.my_log(f"entity_id: {entity_id}")
@@ -159,15 +159,8 @@ class Bozena(BasicApp):
         except:
             pass
 
-    def _get_float(self, entity: str) -> float:
-        try:
-            retval = float(self.get_state(entity))
-        except:
-            retval = 0
-        return retval
-
     def _calculate_init(self, *kwargs):
-        map_picture = self.get_state(lza.MOWER_MAP)
+        map_picture = self.get_state(igc.MOWER_MAP)
         basename = ntpath.basename(map_picture)
         filename = f"/config/www/{basename}"
         svg = ET.parse(filename)
@@ -178,10 +171,10 @@ class Bozena(BasicApp):
             return
         width = float(rects[0].attrib["width"])
         height = float(rects[0].attrib["height"])
-        x0 = self._get_float(lza.MAP_0_X)
-        y0 = self._get_float(lza.MAP_0_Y)
-        x1 = self._get_float(lza.MAP_1_X)
-        y1 = self._get_float(lza.MAP_1_Y)
+        x0 = self.get_state_float(igc.MAP_0_X)
+        y0 = self.get_state_float(igc.MAP_0_Y)
+        x1 = self.get_state_float(igc.MAP_1_X)
+        y1 = self.get_state_float(igc.MAP_1_Y)
         self._const_x = (x1 - x0) / width
         self._const_y = (y0 - y1) / height
         self.my_log(f"width: {width} const_x: {self._const_x}")
