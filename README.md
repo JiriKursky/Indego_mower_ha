@@ -26,7 +26,7 @@ You need:
 4. If Indego component is working you should be able in Home Assistant to call service
 ![service](/doc/01-service.png)
 
-No parameters. The service should create in your config/www/indego_map.svg for using in lovelace.
+No parameters. The service should create file config/www/indego_map.svg for using in lovelace.
 
 Check AppDaemon Log - if there is an error maybe I omitted to export some library or restart AppDaemon.
 
