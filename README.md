@@ -1,5 +1,5 @@
 # Indego Mower Home Assistant display
-Home Assistant Indego mower map
+Home Assistant Indego mower map. This is draft and if you have no experinces with AppDaemon 4 and button-card it can make you unhappy. However - it works. Tested on me and still working on that.
 
 ![Map example](/doc/m1-map.png)
 
@@ -20,4 +20,6 @@ You must have installed custom_component from here: https://github.com/JiriKursk
 Copy appdaemon/apps into your folder config/appdaemon/apps. This folder is automatically created after installing of add-on
 
 If Indego component is working you should be able in Home Assistant to call service
-![service](/doc/01-service.png) No parameters. The service should create in your config/www/indego_map.svg for using in lovelace.
+![service](/doc/01-service.png)
+
+No parameters. The service should create in your config/www/indego_map.svg for using in lovelace.
