@@ -27,7 +27,7 @@ GROUP_CALCULATE = [igc.MAP_0_X, igc.MAP_0_Y, igc.MAP_1_X, igc.MAP_1_Y]
 class Bozena(BasicApp):
     def initialize(self):
         super().initialize()
-        self.do_log = "input_boolean.log_bozena"
+        self.do_log = igc.BOZENA_DEBUG
         self.my_log("Start bozena")
         self._const_x: float = 0.0
         self._const_y: float = 0.0
@@ -38,12 +38,12 @@ class Bozena(BasicApp):
             self.listen_state(self._calculate_init, g)
         # Definice prikazu, plus stavy, ktere rusi zapnute prikazy
         self._prikazy = {
-            igc.BOZENO_SEKAT: [
+            igc.BOZENA_SEKAT: [
                 self._sekat,
                 ("Mowing", "Border cut", "Mowing - Relocalising"),
             ],
-            igc.BOZENO_DOMU: [self._domu, ("Sleeping", "Mowing - Paused")],
-            igc.BOZENO_PAUZA: [self._pauza, ("Docking", "Mowing - Paused")],
+            igc.BOZENA_DOMU: [self._domu, ("Sleeping", "Mowing - Paused")],
+            igc.BOZENA_PAUZA: [self._pauza, ("Docking", "Mowing - Paused")],
         }
 
         for entity, ar in self._prikazy.items():
@@ -62,7 +62,8 @@ class Bozena(BasicApp):
         self.run_in(self._calculate_init, 2)
         # Stav, ktery se zobrazuje - zadefinovany jako sensor
 
-        self.tlacitko(self._update_bozena, igc.IB_BOZENA_UPDATE)
+        self.listen_on(self._update_bozena, igc.BOZENA_UPDATE)
+        self.turn_off(igc.BOZENA_UPDATE)
         self.simple_loop(30)
 
     def _loop(self, *kwargs):
@@ -102,6 +103,7 @@ class Bozena(BasicApp):
 
     def _cti_stav(self, *kwargs):
         self.my_log("Cte stav")
+        self.turn_off(igc.BOZENA_UPDATE)
         s = self._state_detail
         x, y = self._get_xy()
         nx = int(x * self._const_x)
@@ -123,16 +125,16 @@ class Bozena(BasicApp):
         state = OFF
         if s in ("Docked", "Charging") or self._je_doma:
             state = ON
-            self.turn_off(igc.BOZENO_DOMU)
+            self.turn_off(igc.BOZENA_DOMU)
         self.my_log(f"Nastaveni doma: {state}")
         self._sensor_bozena_doma.state = state
         # Kontrola, je-li splnen pozadavek zakaz sekani
         if (
             not self._je_doma
             and self.is_entity_on(igc.BOZENA_ZAKAZ_SEKANI)
-            and self.is_entity_off(igc.BOZENO_DOMU)
+            and self.is_entity_off(igc.BOZENA_DOMU)
         ):
-            self.turn_on(igc.BOZENO_DOMU)
+            self.turn_on(igc.BOZENA_DOMU)
 
     def _prikaz(self, entity_id: str):
         self.my_log(f"entity_id: {entity_id}")

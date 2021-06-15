@@ -1,0 +1,21 @@
+global_modules:
+  - globals
+  - indego_const
+  - sensor_op  
+base_op:
+  module: base_op
+  class: BaseOp
+basic_app:
+    module: utils
+    class: BasicApp
+    dependencies:
+      - base_op
+bozena:
+  module: bozena
+  class: Bozena
+  global_dependencies:
+    - globals    
+    - helper_tools
+    - indego_const
+  dependencies:    
+    - basic_app        

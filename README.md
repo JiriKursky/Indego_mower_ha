@@ -17,7 +17,10 @@ You need:
 
 ## Installation
 
-You must have installed custom_component from here: https://github.com/JiriKursky/Indego
+1. You must installed custom_component from here: https://github.com/JiriKursky/Indego and see the new sensor with position.
+
+2. Rename sensors directly in Home Assistant UI according this file 
+
 
 If Indego component is working you should be able in Home Assistant to call service
 ![service](/doc/01-service.png)
