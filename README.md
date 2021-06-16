@@ -1,4 +1,4 @@
-# Indego Mower Home Assistant map
+# Indego Mower Map Ibbn Home Assistant 
 Home Assistant Indego mower map. This is draft and if you have no experinces with AppDaemon 4 and button-card it can make you unhappy. You must have basic knowledge about configuration apps.yaml
 
 However - it works. Tested on me and still working on that.
