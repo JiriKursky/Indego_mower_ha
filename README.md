@@ -11,6 +11,15 @@ You need:
 
 [AppDaemon 4](https://github.com/hassio-addons/addon-appdaemon) - you can install it as standard add-on via Supervisor
 
+there is necessary to add in configuration TinyDB package:
+```yaml
+system_packages: []
+python_packages:  
+  - TinyDB
+init_commands: []
+```
+
+
 [button-card](https://github.com/custom-cards/button-card) - you can install it from HACS
 
 ## Installation
