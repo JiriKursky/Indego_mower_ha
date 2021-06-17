@@ -9,7 +9,15 @@ class StrOp:
         pass
 
     @staticmethod
-    def split_entity(entity):
+    def split_entity(entity: str) -> tuple:
+        """Divide to namespace and entity
+
+        Args:
+            entity (str): [description]
+
+        Returns:
+            tuple: (namespace,entity_name)
+        """
         return entity.split(".")
 
     @staticmethod
@@ -55,7 +63,11 @@ class MyHelp:
 
     @staticmethod
     def is_array(myvar):
-        return isinstance(myvar, list)
+        return isinstance(myvar, list) or isinstance(myvar, tuple)
+
+    @staticmethod
+    def is_bool(myvar):
+        return isinstance(myvar, bool)
 
     @staticmethod
     def is_dict(myvar):
@@ -78,9 +90,35 @@ class MyHelp:
             return False
 
     @staticmethod
-    def par(param, k):
+    def attr(attributes):
+        return {key: None for key in attributes}
+
+    @staticmethod
+    def pop(param: dict, key: type):
+        if MyHelp.is_array(key):
+            retval: list = []
+            for k in key:
+                retval.append(MyHelp.pop(param, k))
+        else:
+            try:
+                param.pop(key)
+            except:
+                pass
+
+    @staticmethod
+    def par(param: dict, k: type, default: type = None) -> type:
+        """Returning value from dicionary
+
+        Args:
+            param (dict): [description]
+            k (type): [description]
+            default (type, optional): [description]. Defaults to None.
+
+        Returns:
+            type: [description]
+        """
         if not param:
-            return None
+            return default
         if MyHelp.is_array(k):
             ret_val = []
             for j in k:
@@ -89,7 +127,7 @@ class MyHelp:
         if k in param:
             return param[k]
         else:
-            return None
+            return default
 
     @staticmethod
     def vrat_on_off(yes: bool) -> str:

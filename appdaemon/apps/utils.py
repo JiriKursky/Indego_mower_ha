@@ -54,6 +54,15 @@ class BasicApp(BaseOp):
         self._events = {}
         self.def_sensors = {}
 
+    def create_entity(self, entity_id: str, **kwargs) -> str:
+        if "attributes" in kwargs:
+            self.fire_event(
+                "E_DEFINE_ENTITY", entity_id=entity_id, attributes=kwargs["attributes"]
+            )
+        else:
+            self.fire_event("E_DEFINE_ENTITY", entity_id=entity_id)
+        return entity_id
+
     def run_later(self, proc: type) -> None:
         """Pouziva se pro pozdejsi spusteni
 
@@ -162,10 +171,20 @@ class BasicApp(BaseOp):
         Returns:
             [type]: [description]
         """
-        return self.get_state(entity_id, attribute="all")
+        if self.entity_exists(entity_id):
+            return self.get_state(entity_id, attribute="all")
+        else:
+            return None
 
     def get_attr_state_float(self, entity_id, attr) -> float:
         return float(self.get_attr_state(entity_id, attr))
+
+    def get_attributes(self, entity_id: str) -> dict:
+        all = self.get_all_state(entity_id)
+        if all:
+            return all["attributes"]
+        else:
+            return None
 
     def get_state_float(self, entity_id: str) -> float:
         """Prevod state na float
@@ -197,6 +216,9 @@ class BasicApp(BaseOp):
     def get_state_int(self, entity_id: str) -> int:
         return int(self.get_state_float(entity_id))
 
+    def get_state_binary(self, entity_id: str) -> bool:
+        return self.get_state(entity_id) == ON
+
     def get_state_str(self, entity_id: str) -> str:
         return str(self.get_state(entity_id))
 
@@ -218,12 +240,9 @@ class BasicApp(BaseOp):
         if self.is_entity_on(lop.PRITOMNOST):
             self.google_say(to_say)
 
-    def set_sensor_state(self, entity_id: str, state: str) -> None:
-        self.set_state(entity_id, state=state)
-
     def set_datetime(self, entity_id, time):
         time_to_set = time.strftime("%Y-%m-%d %H:%M:%S")
-        self.set_state(entity_id, state=time_to_set)
+        self.set_entity_state(entity_id, time_to_set)
         self.call_service(
             "input_datetime/set_datetime", entity_id=entity_id, datetime=time_to_set
         )

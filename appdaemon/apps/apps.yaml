@@ -10,6 +10,13 @@ basic_app:
     class: BasicApp
     dependencies:
       - base_op
+entities_def:
+  module: entities_def
+  class: EntitiesDef    
+  global_dependencies: 
+    - globals
+    - helper_tools
+    - basic_app
 bozena:
   module: bozena
   class: Bozena
