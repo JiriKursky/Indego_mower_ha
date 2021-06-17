@@ -1,25 +1,11 @@
 from utils import BasicApp
 from globals import ON, OFF, ANO, NE
 import indego_const as igc
-from sensor_op import AppBinarySensor
+from sensor_op import DefineEntity
 from helper_tools import MyHelp as h
 import xml.etree.ElementTree as ET
 import ntpath
 
-
-C_MOVING = "Mowing"
-
-SLOVNIK = {
-    C_MOVING: "Seká",
-    "Docked": "Doma",
-    "Border cut": "Seká okraj",
-    "Sleeping": "Spí",
-    "Mowing - Relocalising": "Hledá pozici",
-    "Returning to dock - Lawn complete": "Návrat, hotovo",
-    "Returning to dock - requested by user/app": "Příkaz návrat domů",
-    "Charging": "Nabíjí se",
-    "Paused": "Pauza",
-}
 
 GROUP_CALCULATE = [igc.MAP_0_X, igc.MAP_0_Y, igc.MAP_1_X, igc.MAP_1_Y]
 
@@ -27,7 +13,23 @@ GROUP_CALCULATE = [igc.MAP_0_X, igc.MAP_0_Y, igc.MAP_1_X, igc.MAP_1_Y]
 class Bozena(BasicApp):
     def initialize(self):
         super().initialize()
-        self.do_log = igc.BOZENA_DEBUG
+        for e in (
+            igc.MAP_0_X,
+            igc.MAP_0_Y,
+            igc.MAP_1_X,
+            igc.MAP_1_Y,
+            igc.BOZENA_ZAKAZ_SEKANI,
+        ):
+            self.create_entity(e, attributes={"unit_of_measurement": "px", "max": 2000})
+        self.create_entity(igc.MOWER_MAP)
+
+        # Last coordinates before update
+        self._last = (0, 0)
+
+        # Specifies how many should ask for new update (position is the same and mower is mowing)
+        self._update_counter = 0
+
+        self.do_log = "input_boolean.bozena_debug"
         self.my_log("Start bozena")
         self._const_x: float = 0.0
         self._const_y: float = 0.0
@@ -50,13 +52,10 @@ class Bozena(BasicApp):
             self.listen_on(ar[0], entity)
 
         # Musi byt zadefinovano pred _cti_stav
-        self._sensor_bozena_doma = AppBinarySensor(
-            self,
+        self.create_entity(
             igc.BOZENA_DOMA,
-            "Božena doma",
-            OFF,
-            "mdi:robot-mower",
-            "mdi:alpha-p-box",
+            state=OFF,
+            attributes={"friendly_name": "Božena doma", "icon": "mdi:robot-mower"},
         )
 
         self.run_in(self._calculate_init, 2)
@@ -66,9 +65,25 @@ class Bozena(BasicApp):
         self.turn_off(igc.BOZENA_UPDATE)
         self.simple_loop(30)
 
+    @property
+    def _sensor_bozena_doma(self):
+        return self.get_state_binary(igc.BOZENA_DOMA)
+
+    @_sensor_bozena_doma.setter
+    def _sensor_bozena_doma(self, value: str):
+        attributes = self.get_attributes(igc.BOZENA_DOMA)
+        if not attributes:
+            return
+        if value == ON:
+            attributes.update({"icon": "mdi:robot-mower"})
+            self.set_state(igc.BOZENA_DOMA, state=ON, attributes=attributes)
+        else:
+            attributes.update({"icon": "mdi:robot-mower"})
+            self.set_estate(igc.BOZENA_DOMA, state=OFF, attributes=attributes)
+
     def _loop(self, *kwargs):
-        self.my_log(f"State: {self._state}")
-        if self._state != C_MOVING:
+        # self.my_log(f"State: {self._state}")
+        if self._state != igc.C_MOVING:
             return
         self._update_bozena()
 
@@ -109,25 +124,25 @@ class Bozena(BasicApp):
         nx = int(x * self._const_x)
         ny = int(y * self._const_y)
         self.my_log(f"Bozena x: {x} {nx} y: {y} {ny}")
-        self.set_state(igc.MOWER_X, state=nx)
-        self.set_state(igc.MOWER_Y, state=ny)
+        self.set_entity_state(igc.MOWER_X, nx)
+        self.set_entity_state(igc.MOWER_Y, ny)
         for entity, ar in self._prikazy.items():
             if self.is_entity_on(entity) and s in ar[1]:
                 self.turn_off(entity)
 
-        if s in SLOVNIK.keys():
+        if s in igc.TRANSLATE.keys():
             self.my_log(f"Je ve slovniku {s}")
-            self.set_sensor_state(igc.BOZENA_STATE_CZ, SLOVNIK[s])
+            self.set_entity_state(igc.BOZENA_STATE_CZ, igc.TRANSLATE[s])
         else:
             self.my_log(f"Neni ve slovniku {s}")
-            self.set_state(igc.BOZENA_STATE_CZ, state=s)
+            self.set_entity_state(igc.BOZENA_STATE_CZ, s)
 
         state = OFF
         if s in ("Docked", "Charging") or self._je_doma:
             state = ON
             self.turn_off(igc.BOZENA_DOMU)
         self.my_log(f"Nastaveni doma: {state}")
-        self._sensor_bozena_doma.state = state
+        self._sensor_bozena_doma = state
         # Kontrola, je-li splnen pozadavek zakaz sekani
         if (
             not self._je_doma
@@ -135,6 +150,11 @@ class Bozena(BasicApp):
             and self.is_entity_off(igc.BOZENA_DOMU)
         ):
             self.turn_on(igc.BOZENA_DOMU)
+        if (x, y) == self._last and self._update_counter > 0:
+            self._update_counter -= 1
+            self.run_in(self._update_bozena, 2)
+        elif (x, y) != self._last:
+            self._update_counter = 2
 
     def _prikaz(self, entity_id: str):
         self.my_log(f"entity_id: {entity_id}")
@@ -156,13 +176,19 @@ class Bozena(BasicApp):
         self._call_service("returnToDock")
 
     def _update_bozena(self, *kwargs):
+        self._last = self._get_xy()
+        self.my_log(self._last)
         try:
-            self.my_log(self.call_service("indego/update_state"))
+            self.call_service("indego/update_state")
         except:
             pass
 
     def _calculate_init(self, *kwargs):
         map_picture = self.get_state(igc.MOWER_MAP)
+        self.my_log(map_picture)
+        if map_picture == "":
+            map_picture = "/local/indego_map.svg"
+            self.set_entity_state(igc.MOWER_MAP, map_picture)
         basename = ntpath.basename(map_picture)
         filename = f"/config/www/{basename}"
         svg = ET.parse(filename)
