@@ -1,27 +1,22 @@
 from utils import BasicApp
 from globals import ON, OFF, ANO, NE
 import indego_const as igc
-from sensor_op import DefineEntity
 from helper_tools import MyHelp as h
 import xml.etree.ElementTree as ET
 import ntpath
 
 
-GROUP_CALCULATE = [igc.MAP_0_X, igc.MAP_0_Y, igc.MAP_1_X, igc.MAP_1_Y]
+GROUP_CALCULATE = (igc.MAP_0_X, igc.MAP_0_Y, igc.MAP_1_X, igc.MAP_1_Y)
 
 
 class Bozena(BasicApp):
     def initialize(self):
         super().initialize()
-        for e in (
-            igc.MAP_0_X,
-            igc.MAP_0_Y,
-            igc.MAP_1_X,
-            igc.MAP_1_Y,
-            igc.BOZENA_ZAKAZ_SEKANI,
-        ):
+        self.log_button = "input_boolean.log_bozena"
+        for e in igc.ENTITIES_PX:
             self.create_entity(e, attributes={"unit_of_measurement": "px", "max": 2000})
-        self.create_entity(igc.MOWER_MAP)
+        for e in igc.DEF_ENTITIES:
+            self.create_entity(e[0], attributes={"friendly_name": e[1]})
 
         # Last coordinates before update
         self._last = (0, 0)
@@ -29,7 +24,6 @@ class Bozena(BasicApp):
         # Specifies how many should ask for new update (position is the same and mower is mowing)
         self._update_counter = 0
 
-        self.do_log = "input_boolean.bozena_debug"
         self.my_log("Start bozena")
         self._const_x: float = 0.0
         self._const_y: float = 0.0
@@ -37,7 +31,7 @@ class Bozena(BasicApp):
         self.listen_state(self._cti_stav, igc.BOZENA_MOWER_POSITION)
         self.listen_state(self._cti_stav, igc.BOZENA_STATE_DETAIL)
         for g in GROUP_CALCULATE:
-            self.listen_state(self._calculate_init, g)
+            self.listen_state(self._calculate_listen, g)
         # Definice prikazu, plus stavy, ktere rusi zapnute prikazy
         self._prikazy = {
             igc.BOZENA_SEKAT: [
@@ -52,13 +46,15 @@ class Bozena(BasicApp):
             self.listen_on(ar[0], entity)
 
         # Musi byt zadefinovano pred _cti_stav
+        """
         self.create_entity(
             igc.BOZENA_DOMA,
             state=OFF,
             attributes={"friendly_name": "Božena doma", "icon": "mdi:robot-mower"},
         )
+        """
 
-        self.run_in(self._calculate_init, 2)
+        self.run_in(self._calculate_init, 20)
         # Stav, ktery se zobrazuje - zadefinovany jako sensor
 
         self.listen_on(self._update_bozena, igc.BOZENA_UPDATE)
@@ -79,7 +75,7 @@ class Bozena(BasicApp):
             self.set_state(igc.BOZENA_DOMA, state=ON, attributes=attributes)
         else:
             attributes.update({"icon": "mdi:robot-mower"})
-            self.set_estate(igc.BOZENA_DOMA, state=OFF, attributes=attributes)
+            self.set_state(igc.BOZENA_DOMA, state=OFF, attributes=attributes)
 
     def _loop(self, *kwargs):
         # self.my_log(f"State: {self._state}")
@@ -89,7 +85,7 @@ class Bozena(BasicApp):
 
     def _call_service(self, comm):
         self.my_log(f"Prikaz {comm}")
-        self.my_log(self.call_service("indego/command", command=comm))
+        self.call_service("indego/command", command=comm)
 
     @property
     def _state_detail(self):
@@ -208,3 +204,6 @@ class Bozena(BasicApp):
         self.my_log(f"width: {width} const_x: {self._const_x}")
         self.my_log(f"height: {height} const_x: {self._const_y}")
         self._cti_stav()
+
+    def _calculate_listen(self, entity, attribute, old, new, kwargs):
+        self._calculate_init()

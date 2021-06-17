@@ -14,7 +14,7 @@ MAP_0_X = "input_number.indego_0_x"
 MAP_0_Y = "input_number.indego_0_y"
 MAP_1_X = "input_number.indego_1_x"
 MAP_1_Y = "input_number.indego_1_y"
-BOZENA_STATE_CZ = "sensor.bozena_stav"
+BOZENA_STATE_INT = "sensor.bozena_stav"
 BOZENA_DOMA = "binary_sensor.bozena_doma"
 MOWER_X = "input_number.bozena_x"
 MOWER_Y = "input_number.bozena_y"
@@ -22,6 +22,19 @@ BOZENA_DOMU = "input_boolean.bozena_domu"
 BOZENA_SEKAT = "input_boolean.bozena_sekat"
 BOZENA_UPDATE = "input_boolean.bozena_update"
 BOZENA_PAUZA = "input_boolean.bozena_pauza"
+
+DEF_ENTITIES = (
+    (BOZENA_ZAKAZ_SEKANI, "Do not mow"),
+    (MOWER_MAP, "Map"),
+    (BOZENA_DOMU, "Home"),
+    (BOZENA_PAUZA, "Pause"),
+    (BOZENA_SEKAT, "Mow"),
+    (BOZENA_UPDATE, "Update"),
+    (BOZENA_STATE_INT, "State"),
+    (BOZENA_DOMA, "Home"),
+)
+ENTITIES_PX = (MAP_0_X, MAP_0_Y, MAP_1_X, MAP_1_Y, MOWER_X, MOWER_Y)
+
 C_MOVING = "Mowing"
 
 ##########################################
