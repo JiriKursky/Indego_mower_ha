@@ -1,0 +1,80 @@
+from collections import namedtuple
+
+DEFINE = [
+    "SENSOR_MODULE_ENTITIES_ON",
+    "APP_ENTITY_READY",
+    "PREPNI_AV",
+    "ZAPNI_DALKOU",
+    "DEF_LOOP",
+    "MAMOVO_RADIO",
+    "RADIO_ON",
+    "FIBARO_ERROR",
+    "FIBARO_REBOOT",
+    "SUPER_NOC",
+    "RANNI_ROZSVICENI_OBYVAK",
+    "E_FIBARO_SET_MODE",
+    "E_FIBARO_DELETE_NOTIFICATION",
+    "E_FIBARO_DELETE_ALL_NOTIFICATIONS",
+    "E_FIBARO_PUBLISH_NOTIFICATIONS",
+    "PANASONIC_STATE_HDMI",
+    "PANASONIC_ZRNI",
+    "E_FIBARO_WAKE_UP",
+    "OBYVAK_LEVE_TLACITKO",
+    "OBYVAK_PROSTREDNI_TLACITKO",
+    "E_DANALOCK_WAKE_UP",
+    "PANASONIC_PRIPRAVEN",
+    "SATELIT",
+    "E_KODI",
+    "E_OBYVAK_AKTIVITA",
+    "E_OBYVAK_TOPENI",
+    "E_GARAZ_ZASUVKY",
+    "E_TLACITKO_GARAZ_ODCHOD",
+    "E_SPUST_KODI",
+    "TIMEOUT",
+    "AKVARIUM_KRMENI",
+    "DENON_PREPNI",
+    "DENON",
+    "PANASONIC",
+    "E_VYPNUTI_AV",
+    "SATELIT_KANAL",
+    "NASTAV_VENTILY",
+    "LED",
+    "PRITOMNOST_GARAZ",
+    "TAG_GARAZ",
+    "VYPNI_GARAZ",
+    "ENTITIES_CREATED",
+    "SYSTEM_READY",
+    "TLACITKO",
+    "DEFINE_ENTITIES",
+]
+
+DEFINE_CONSTS = [
+    "Mowing",
+    "linked_control",
+    "restart",
+    "todo",
+    "service_data",
+    "notification_id",
+    "led_modry_zeleny",
+    "interval",
+    "trigger",
+    "error",
+    "timeout",
+    "event",
+    "timeout_event",
+    "fire_event",
+]
+
+ConstsDef = namedtuple(
+    "ConstsDef",
+    DEFINE_CONSTS,
+    defaults=DEFINE_CONSTS,
+)
+
+EventsDef = namedtuple(
+    "EventsDef",
+    DEFINE,
+    defaults=DEFINE,
+)
+constsDef = ConstsDef()
+eventsDef = EventsDef()

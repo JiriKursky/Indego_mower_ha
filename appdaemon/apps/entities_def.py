@@ -1,21 +1,45 @@
-from utils import BasicApp
-from globals import ON, OFF
+from utils import BaseOp
+from globals import ON, OFF, SENSOR_MODULE_ENTITES
 import importlib
 from helper_tools import StrOp
 from tinydb import TinyDB, Query
 from helper_tools import MyHelp as h
+from globals_def import eventsDef as e
+import global_app_system as gas
 
 E_DEFINE_ENTITY = "E_DEFINE_ENTITY"
 
 
-class EntitiesDef(BasicApp):
+class EntitiesDef(BaseOp):
+    """Defines entities via event e.DEFINE_ENTITY working with json TinyDB.
+    State and entity_id is stored together with one sentence
+    This module must be active as first
+    For that reason is creating SENSOR_MODULE_ENTITES and initially is add
+    Other modul can set it as OFF and can ask via event e.SENSOR_MODULE_ENTITIES_ON if it works
+    """
+
     def initialize(self):
-        self.do_log = "input_boolean.entities_def_debug"
-        self._entities: list = []
-        self._db = TinyDB("custom.json")
+        super().initialize()
+        self.log_button = "input_boolean.log_entities_def"
+        self._db = TinyDB("/config/custom_entities.json")
         self._query = Query()
         self.listen_event(self._create, E_DEFINE_ENTITY)
         self.listen_event(self._change_state, event="call_service")
+        if self.entity_exists(SENSOR_MODULE_ENTITES):
+            self.set_entity_state(SENSOR_MODULE_ENTITES, True)
+            self.listen_event(self._set_on, e.SENSOR_MODULE_ENTITIES_ON)
+        else:
+            self._create(
+                "", {"ini_state": OFF, "entity_id": SENSOR_MODULE_ENTITES}, None
+            )
+            self.run_in(self._set_ready, 1)
+
+    def _set_ready(self, *kwargs):
+        if not self.entity_exists(SENSOR_MODULE_ENTITES):
+            self.run_in(self._set_ready, 1)
+            return
+        self.set_entity_state(SENSOR_MODULE_ENTITES, True)
+        self.listen_event(self._set_on, e.SENSOR_MODULE_ENTITIES_ON)
 
     def _db_get_raw_data(self, entity_id):
         result = self._db.search(self._query.entity_id == entity_id)
@@ -64,7 +88,7 @@ class EntitiesDef(BasicApp):
 
         self.my_log(f"Attributes 2: {attr}")
         self._db.remove(self._query.entity_id == entity_id)
-        self.set_state(entity_id, state=state, attributes=attr)
+        self.set_entity_state(entity_id, state, attributes=attr, save_attr=True)
         attr.update({"state": state, "entity_id": entity_id})
         self.my_log(f"Insert: {attr}")
         self._db.insert(attr)
@@ -73,15 +97,24 @@ class EntitiesDef(BasicApp):
         self.my_log(data)
         entity_id = h.par(data, "entity_id")
         attributes = h.par(data, "attributes", {})
-        # Is it saved?
-        state = self._db_get_state(entity_id)
+        state = h.par(data, "ini_state")
         if not state:
-            state = h.par(data, "state", "")
+            # Is it saved?
+            state = self._db_get_state(entity_id)
+            if not state:
+                state = h.par(data, "state", "")
         self.my_log(f"Creating: {entity_id} state: {state} attr: {attributes}")
         domain, name = StrOp.split_entity(entity_id)
+
         if domain == "input_boolean":
             self._input_boolean(entity_id, state, attributes)
-        elif domain == "sensor" or domain == "binary_sensor":
+        elif domain == "sensor":
+            if not state:
+                state = ""
+            self._sensor(entity_id, state, attributes)
+        elif domain == "binary_sensor":
+            if not state:
+                state = OFF
             self._sensor(entity_id, state, attributes)
         elif domain == "input_number":
             self._input_number(entity_id, state, attributes)
@@ -89,24 +122,49 @@ class EntitiesDef(BasicApp):
             self._input_text(entity_id, state, attributes)
 
     def _input_boolean(self, entity_id: str, state: type, attributes: dict):
-        self._entities.append(entity_id)
         if not self.entity_exists(entity_id):
-            self.set_state(entity_id, state=OFF)
+            self.set_entity_state(
+                entity_id, state=OFF, attributes=attributes, save_attr=True
+            )
 
     def _sensor(self, entity_id, state, attributes):
-        if attributes:
-            self.set_state(entity_id, state=state, attributes=attributes)
-        else:
-            self.set_state(entity_id, state=state)
+        self.set_entity_state(
+            entity_id, state=state, attributes=attributes, save_attr=True
+        )
+
+    def _sensor_callback(self, entity, attribute, old, new, kwargs):
+        """To je asi blbost
+
+        Args:
+            entity ([type]): [description]
+            attribute ([type]): [description]
+            old ([type]): [description]
+            new ([type]): [description]
+            kwargs ([type]): [description]
+        """
+        if old == new:
+            return
+        self.my_log(f"Callback: {entity}")
+        data = {
+            "service": "set_value",
+            "service_data": {"entity_id": entity, "value": new},
+        }
+        self.my_log(f"Sensor: set: {new}")
+        self._change_state("custom", data, None)
 
     def _change_state(self, event_name, data, kwargs):
+        self.my_log(f"event: {event_name}  service: {data['service']} data: {data}")
         try:
             entity = data["service_data"]["entity_id"]
         except:
+            self.my_log("Nerozumim")
             return
-        if not entity in self._entities:
+        if not h.in_array(entity, gas.defined_entities):
+            self.my_log(f"Entita: {entity} neni v seznamu")
+            self.my_log(f"Seznam: {gas.defined_entities}")
             return
         domain, _ = StrOp.split_entity(entity)
+        self.my_log(f"entity: {entity}  service: {data['service']}")
         if domain == "input_number":
             self.my_log(data["service"])
         if data["service"] == "decrement":
@@ -117,6 +175,7 @@ class EntitiesDef(BasicApp):
             state = data["service_data"]["value"]
             self.my_log(f"Replace to: {state}")
             self._db_replace_data(entity, state)
+            self.set_state(entity, state=state)
         if data["service"] == "turn_off":
             state = OFF
             self.set_state(entity, state=state)
@@ -154,14 +213,6 @@ class EntitiesDef(BasicApp):
         self.my_log(f"Prenos state: {state}")
         self._db_replace_data(entity_id, state, attributes_default)
 
-        if self.entity_exists(entity_id):
-            self.my_log(f"Existuje entita {entity_id}")
-            if not entity_id in self._entities:
-                self._entities.append(entity_id)
-            return
-        elif not entity_id in self._entities:
-            self._entities.append(entity_id)
-
     def _input_text(self, entity_id, state, attributes):
         """State je jiz preneseno z databaze
 
@@ -188,10 +239,5 @@ class EntitiesDef(BasicApp):
         self.my_log(f"Prenos state: {state}")
         self._db_replace_data(entity_id, state, attributes_default)
 
-        if self.entity_exists(entity_id):
-            self.my_log(f"Existuje entita {entity_id}")
-            if not entity_id in self._entities:
-                self._entities.append(entity_id)
-            return
-        elif not entity_id in self._entities:
-            self._entities.append(entity_id)
+    def _set_on(self, *kwargs):
+        self.set_entity_state(SENSOR_MODULE_ENTITES, True)

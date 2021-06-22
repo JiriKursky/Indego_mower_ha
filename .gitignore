@@ -1,2 +1,6 @@
 
 workspace.code-workspace
+/make.bat
+/Makefile
+/source
+/build

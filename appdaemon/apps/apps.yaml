@@ -1,28 +1,54 @@
 global_modules:
   - globals
-  - indego_const
-  - sensor_op  
+  - globals_def
+  - global_indego
+  - utils  
+  - helper_tools
+  - global_app_system
+db_custom_entities:
+    module: db_custom_entities
+    class: DbCustomEntities
+    global_dependencies:
+        - helper_tools
+    priority: 5
 base_op:
-  module: base_op
-  class: BaseOp
+    module: base_op
+    class: BaseOp
+    priority: 10
 basic_app:
     module: utils
     class: BasicApp
     dependencies:
-      - base_op
+        - base_op
 entities_def:
-  module: entities_def
-  class: EntitiesDef    
-  global_dependencies: 
-    - globals
-    - helper_tools
-    - basic_app
+    module: entities_def
+    class: EntitiesDef
+    global_dependencies:
+        - globals
+        - helper_tools
+        - base_op
+    dependencies:
+        - db_custom_entities
+    priority: 30
+app_system:
+    module: app_system
+    class: AppSystem
+    global_dependencies:
+        - globals
+        - global_app_system
+        - globals_def
+    dependencies:
+        - basic_app
+        - entities_def
+    priority: 1000
 bozena:
-  module: bozena
-  class: Bozena
-  global_dependencies:
-    - globals    
-    - helper_tools
-    - indego_const
-  dependencies:    
-    - basic_app        
+    module: bozena
+    class: Bozena
+    global_dependencies:
+        - globals
+        - helper_tools
+        - global_indego        
+    dependencies:
+        - basic_app
+        - entities_def        
+        - app_system  

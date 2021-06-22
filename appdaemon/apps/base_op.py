@@ -2,6 +2,7 @@ import appdaemon.plugins.hass.hassapi as hass
 from helper_tools import DateTimeOp, MyHelp as h
 import globals as g
 from globals import ON, OFF
+from globals_def import eventsDef as e
 from inspect import currentframe, getframeinfo
 
 
@@ -20,12 +21,13 @@ class UObject(object):
 
 
 class BaseOp(hass.Hass):
-    def initialize(self):
-        self.do_log = False
+    def initialize(self, do_log: bool = False):
+        self.do_log = do_log
         self.log("Ini: {}".format(DateTimeOp.just_now().strftime("%Y-%m-%d %H:%M:%S")))
         self._log_button = ""
         self._fired_proc_buff = []
         self._fired_proc = {}
+        self._entities_def = None
 
     @property
     def letni_cas(self):
@@ -164,7 +166,10 @@ class BaseOp(hass.Hass):
         self.log(f"{previous}: {message}")
 
     def my_log(self, message):
-        if self.do_log:
+        try:
+            if self.do_log:
+                self._my_log(message)
+        except:
             self._my_log(message)
 
     @log_button.setter
@@ -202,15 +207,42 @@ class BaseOp(hass.Hass):
             retval = None
         return retval
 
+    def get_all_state(self, entity_id: str) -> type:
+        """Vraci cely state vcetne atributů
+
+        Args:
+            entity_id (str): entita
+
+        Returns:
+            [type]: [description]
+        """
+        if self.entity_exists(entity_id):
+            return self.get_state(entity_id, attribute="all")
+        else:
+            return None
+
+    def get_attributes(self, entity_id: str) -> dict:
+        all = self.get_all_state(entity_id)
+        if all:
+            return all["attributes"]
+        else:
+            return None
+
     def set_entity_state(
-        self, entity_id: str, state: type, attributes: dict = {}
+        self,
+        entity_id: str,
+        state: type,
+        attributes: dict = {},
+        save_attr: bool = True,
     ) -> None:
         """Setting entity state
 
         Args:
             entity_id (str): [description]
-            state (type): [description]
-        """
+            state (type): can be even bool
+            attributes (dict, optional): new attributes. Defaults to {}.
+            save_attr (bool, optional): attributes will be left. Defaults to True."""
+
         s_state: str = ""
         if h.is_string(state):
             s_state = state
@@ -221,7 +253,41 @@ class BaseOp(hass.Hass):
                 s_state = OFF
         else:
             s_state = str(state)
+        if save_attr:
+            attr = self.get_attributes(entity_id)
+            if attributes and attr:
+                attr.update(attributes)
+            if attr:
+                attributes = attr
         if attributes:
             self.set_state(entity_id, state=s_state, attributes=attributes)
         else:
             self.set_state(entity_id, state=s_state)
+
+    def create_entity(
+        self,
+        entity_id: str,
+        state: type = None,
+        attributes: dict = {},
+        friendly_name: str = "",
+    ) -> str:
+        """Creating entity using api entities_def
+
+        Args:
+            entity_id (str): [description]
+            state (type, optional): ini state. Defaults to None.
+            attributes (dict, optional): [description]. Defaults to {}.
+            friendly_name (str, optional): [description]. Defaults to "".
+
+        Returns:
+            str: entity_id
+        """
+        if not self._entities_def:
+            self._entities_def = self.get_app("entities_def")
+            if not self._entities_def:
+                self.my_log("Fatal error in loading entities_def")
+                return ""
+        if friendly_name:
+            attributes.update({"friendly_name": friendly_name})
+        self._entities_def.create(entity_id, state, attributes)
+        return entity_id

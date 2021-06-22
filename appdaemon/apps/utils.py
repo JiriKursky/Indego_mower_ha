@@ -21,8 +21,8 @@ import globals as g
 import appdaemon.plugins.hass.hassapi as hass
 from helper_tools import DateTimeOp, MyHelp as h
 from inspect import currentframe, getframeinfo
-import location_obyvaci_pokoj as lop
 from base_op import BaseOp
+from global_app_system import SYSTEM_READY
 
 
 def defineLoop(has: object, callback: type, interval: int) -> list:
@@ -44,24 +44,41 @@ def defineLoop(has: object, callback: type, interval: int) -> list:
 
 
 class BasicApp(BaseOp):
-    def initialize(self):
-        super().initialize()
+    def initialize(self, do_log: bool = False):
+        """Aby mohla zafungovat app_system musi byt nejprve natazeno entities_def"""
+        super().initialize(do_log)
+        self.my_log("Initialize")
+        self.system_initialize = True
         self._toggle_def = {}
         self._ovladac = {}
         self._async_run_update = False
         self._msg = ""
-
         self._events = {}
         self.def_sensors = {}
+        try:
+            if self.do_wait_for_system:
+                watchdog = 10000
+                self.my_log("Waiting for definition")
+                self.run_in(self._wait_for_system, 1)
+                while self.system_initialize and watchdog > 0:
+                    watchdog -= 1
+                    self.my_log(f"Cekam {watchdog}")
+                if self.system_initialize:
+                    self.my_log("Neco hodne blbe")
+        except:
+            pass
 
-    def create_entity(self, entity_id: str, **kwargs) -> str:
-        if "attributes" in kwargs:
-            self.fire_event(
-                "E_DEFINE_ENTITY", entity_id=entity_id, attributes=kwargs["attributes"]
-            )
-        else:
-            self.fire_event("E_DEFINE_ENTITY", entity_id=entity_id)
-        return entity_id
+    def _wait_for_system(self, *kwargs):
+        entity_exists = self.entity_exists(SYSTEM_READY)
+        # self.my_log(f"Wait for system. {SYSTEM_READY} entita: {entity_exists}")
+        self.system_initialize = True
+        if entity_exists:
+            vse_ok = self.get_state(SYSTEM_READY) == ON
+            self.my_log(f"System ready: {vse_ok}")
+            if vse_ok:
+                self.system_initialize = False
+                return
+        self.run_in(self._wait_for_system, 1)
 
     def run_later(self, proc: type) -> None:
         """Pouziva se pro pozdejsi spusteni
@@ -70,6 +87,33 @@ class BasicApp(BaseOp):
             proc (type): procedura, ktera bude pozdeji spustena
         """
         self.run_in(proc, 5)
+
+    def cancel_timer(self, handler):
+        if not handler:
+            return
+        if self.timer_running(handler):
+            # retval = self.info_timer(handler)
+            super().cancel_timer(handler)
+
+    def google_say(self, msg, temporary=False):
+        self._msg = msg
+        self.fire_event(E_API_GOOGLE, todo=msg, temporary=temporary)
+
+        # self.run_in(self._say, 5)
+
+    def _say(self, *kwargs):
+        self.call_service(
+            "tts/google_translate_say",
+            entity_id="media_player.family_room_speaker",
+            message=self._msg,
+        )
+
+    def entity_error(self, entity_id) -> bool:
+        retval = self.get_state(entity_id) == UNAVAILABLE
+        if retval:
+            self.fire_event(E_ENTITY_ERROR, entity=entity_id)
+            self.my_log(f"Error entita: {entity_id}")
+        return retval
 
     def simple_loop(self, interval: int, *kwargs) -> None:
         """loop definovany pres takt
@@ -98,33 +142,6 @@ class BasicApp(BaseOp):
         abstraktni funkce
         """
         pass
-
-    def cancel_timer(self, handler):
-        if not handler:
-            return
-        if self.timer_running(handler):
-            # retval = self.info_timer(handler)
-            super().cancel_timer(handler)
-
-    def google_say(self, msg, temporary=False):
-        self._msg = msg
-        self.fire_event(E_API_GOOGLE, todo=msg, temporary=temporary)
-
-        # self.run_in(self._say, 5)
-
-    def _say(self, *kwargs):
-        self.call_service(
-            "tts/google_translate_say",
-            entity_id="media_player.family_room_speaker",
-            message=self._msg,
-        )
-
-    def entity_error(self, entity_id) -> bool:
-        retval = self.get_state(entity_id) == UNAVAILABLE
-        if retval:
-            self.fire_event(E_ENTITY_ERROR, entity=entity_id)
-            self.my_log(f"Error entita: {entity_id}")
-        return retval
 
     def toggle(self, entity_id):
         if self.entity_error(entity_id):
@@ -162,29 +179,8 @@ class BasicApp(BaseOp):
     def scene_turn_on(self, entity_id):
         self.call_service("scene/turn_on", entity_id=entity_id)
 
-    def get_all_state(self, entity_id: str) -> type:
-        """Vraci cely state vcetne atributů
-
-        Args:
-            entity_id (str): entita
-
-        Returns:
-            [type]: [description]
-        """
-        if self.entity_exists(entity_id):
-            return self.get_state(entity_id, attribute="all")
-        else:
-            return None
-
     def get_attr_state_float(self, entity_id, attr) -> float:
         return float(self.get_attr_state(entity_id, attr))
-
-    def get_attributes(self, entity_id: str) -> dict:
-        all = self.get_all_state(entity_id)
-        if all:
-            return all["attributes"]
-        else:
-            return None
 
     def get_state_float(self, entity_id: str) -> float:
         """Prevod state na float
@@ -236,10 +232,6 @@ class BasicApp(BaseOp):
         sec = time.mktime(date_time_obj.timetuple())
         return ted - sec
 
-    def google_oznam(self, to_say):
-        if self.is_entity_on(lop.PRITOMNOST):
-            self.google_say(to_say)
-
     def set_datetime(self, entity_id, time):
         time_to_set = time.strftime("%Y-%m-%d %H:%M:%S")
         self.set_entity_state(entity_id, time_to_set)
@@ -247,17 +239,19 @@ class BasicApp(BaseOp):
             "input_datetime/set_datetime", entity_id=entity_id, datetime=time_to_set
         )
 
-    def set_attribute(self, entity: str, attr):
+    def set_attribute(self, entity: str, attr: dict) -> None:
         """Nastaví nové atributy
 
         Args:
-            entity ([type]): [description]
-            attr ([type]): [description]
+            entity (str): [description]
+            attr (dict): [description]
         """
+
         all = self.get_all_state(entity)
         state = all["state"]
         o_attr = all["attributes"]
         # Pridava atributy je starym
+        o_attr.update(attr)
         for a in attr:
             o_attr[a] = attr[a]
         self.set_state(entity, state=state, attributes=o_attr)
