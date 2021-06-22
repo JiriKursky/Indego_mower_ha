@@ -48,4 +48,4 @@ You have to make calibration - describing will be later.
 
 After calibration you can use this yaml https://github.com/JiriKursky/Indego_mower_ha/blob/main/lovelace/indego_map.yaml
 
-I am sorry to use czech words inside but I do not think that somebody will try this
+I am sorry to use czech words inside code but I do not think that somebody will try this
