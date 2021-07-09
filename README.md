@@ -14,13 +14,8 @@ You need:
 
 [AppDaemon 4](https://github.com/hassio-addons/addon-appdaemon) - you can install it as standard add-on via Supervisor
 
-there is necessary to add in configuration TinyDB package:
-```yaml
-system_packages: []
-python_packages:  
-  - TinyDB
-init_commands: []
-```
+there is not necessary add in configuration of AppDaemon
+
 
 
 [button-card](https://github.com/custom-cards/button-card) - you can install it from HACS
@@ -31,11 +26,13 @@ init_commands: []
 
 2. Rename sensors directly in Home Assistant UI according this file: https://github.com/JiriKursky/Indego_mower_ha/blob/main/appdaemon/apps/indego_const.py. You can also in this file switch off Czech language or put there your own.
 
-3. Copy everything from this folder https://github.com/JiriKursky/Indego_mower_ha/blob/main/appdaemon/apps/ into your config/appdaemon/apps.This folder is automatically created after installing of add-on AppDaemon 4. Be aware if you have already apps.yaml in your folder - you should update it according that https://github.com/JiriKursky/Indego_mower_ha/blob/main/appdaemon/apps/apps.yaml 
+3. You must have installation of AppFramework https://github.com/JiriKursky/AppFramework
+
+4. Copy everything from this folder https://github.com/JiriKursky/Indego_mower_ha/blob/main/appdaemon/apps/ into your config/appdaemon/apps.This folder is automatically created after installing of add-on AppDaemon 4. Be aware if you have already apps.yaml in your folder - you should update it according that https://github.com/JiriKursky/Indego_mower_ha/blob/main/appdaemon/apps/apps.yaml 
 
 ## Next steps
 
-4. If Indego component is working you should be able in Home Assistant to call service
+5. If Indego component is working you should be able in Home Assistant to call service
 ![service](/doc/01-service.png)
 
 No parameters. The service should create file config/www/indego_map.svg for using in lovelace.
