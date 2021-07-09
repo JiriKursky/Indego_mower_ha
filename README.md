@@ -22,9 +22,9 @@ there is not necessary add in configuration of AppDaemon
 
 ## Installation
 
-1. You must installed custom_component from here: https://github.com/JiriKursky/Indego and after installation have to appear the new Indego sensor with position.
+1. In your directory /config/custom_components/ clone : https://github.com/JiriKursky/Indego. After restart of Home Assistant have to appear the new Indego sensor with position.
 
-2. Rename sensors directly in Home Assistant UI according this file: https://github.com/JiriKursky/Indego_mower_ha/blob/main/appdaemon/apps/indego_const.py. You can also in this file switch off Czech language or put there your own.
+2. Rename sensors directly in Home Assistant UI according this file: https://github.com/JiriKursky/Indego_mower_ha/blob/main/appdaemon/apps/global_indego.py. You can also in this file switch off Czech language or put there your own.
 
 3. You must have installation of AppFramework https://github.com/JiriKursky/AppFramework
 
