@@ -4,6 +4,7 @@
 
 
 The original component was created by https://github.com/jm-73/Indego
+Tested only with Indego S+ 350
 I only add sensor and service
 
 
