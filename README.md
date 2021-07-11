@@ -13,7 +13,7 @@ I am working on tutorial how to use that with AppDeamon.
 
 ![Map example](/doc/m1-map.png)
 
-Green and red points are for calibration, yellow is estimate position of Indego.
+Yellow point is estimate position of Indego.
 
 ## Installation
 
