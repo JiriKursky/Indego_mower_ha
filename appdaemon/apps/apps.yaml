@@ -1,54 +1,63 @@
 global_modules:
-  - globals
-  - globals_def
-  - global_indego
-  - utils  
-  - helper_tools
-  - global_app_system
-db_custom_entities:
-    module: db_custom_entities
-    class: DbCustomEntities
+- globals
+- helper_tools
+- globals_def
+- global_test
+- global_app_system
+- sensor_op
+- u_object
+- global_indego
+app_framework:
+    class: AppFramework
+    module: app_framework        
     global_dependencies:
-        - helper_tools
-    priority: 5
+    - globals
+    - helper_tools
+    - utils    
+    - sensor_op
+app_system:
+    class: AppSystem
+    dependencies:
+    - basic_app    
+    - app_framework
+    global_dependencies:
+    - globals
+    - global_app_system
+    - globals_def
+    - utils
+    module: app_system
 base_op:
-    module: base_op
     class: BaseOp
-    priority: 10
+    module: base_op
+    global_dependencies:
+    - globals_def
+    - globals
+    - helper_tools
 basic_app:
-    module: utils
     class: BasicApp
     dependencies:
-        - base_op
-entities_def:
-    module: entities_def
-    class: EntitiesDef
+    - base_op
+    module: utils
     global_dependencies:
-        - globals
-        - helper_tools
-        - base_op
+    - globals
+takt_app:
+    class: Takt
     dependencies:
-        - db_custom_entities
-    priority: 30
-app_system:
-    module: app_system
-    class: AppSystem
+    - base_op
+    - basic_app
     global_dependencies:
-        - globals
-        - global_app_system
-        - globals_def
+    - globals
+    - helper_tools
+    - globals_def
+    - u_object
+    module: takt
+indego_mower:
+    class: IndegoMower
     dependencies:
-        - basic_app
-        - entities_def
-    priority: 1000
-bozena:
-    module: bozena
-    class: Bozena
+    - base_op
+    - basic_app    
+    - app_system
     global_dependencies:
-        - globals
-        - helper_tools
-        - global_indego        
-    dependencies:
-        - basic_app
-        - entities_def        
-        - app_system  
+    - globals
+    - helper_tools
+    - global_indego
