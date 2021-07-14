@@ -1,6 +1,6 @@
 
 # Indego Mower Map In Home Assistant 
-[![GitHub release](https://img.shields.io/github/release/JiriKursky/Indego_mower_ha.svg)](https://github.com/JiriKursky/Indego_mower_ha/releases) 
+#[![GitHub release](https://img.shields.io/github/release/JiriKursky/Indego_mower_ha.svg)](https://github.com/JiriKursky/Indego_mower_ha/releases) 
 
 
 The original component was created by https://github.com/jm-73/Indego
@@ -14,9 +14,9 @@ Yellow point is estimate position of Indego.
 
 ## Installation
 
-1. In your directory /config/custom_components/ clone : https://github.com/JiriKursky/Indego. After restart of Home Assistant have to appear the new Indego sensor with position.
+1. In your directory /config/custom_components/ clone : https://github.com/JiriKursky/Indego_350. After restart of Home Assistant have to appear the new Indego sensor with position.
 
-2. For using in map you can use AppDaemon code -I am preparing  tutorial on AppFramework https://appframework.readthedocs.io/en/latest/.
+2. For using in map you can use AppDaemon code - you can find tutorial on [AppFramework](https://appframework.readthedocs.io/en/latest/).
 
 
 ## Next steps
